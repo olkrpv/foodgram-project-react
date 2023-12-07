@@ -40,9 +40,15 @@ class Recipe(models.Model):
         verbose_name='Автор'
     )
     name = models.CharField(max_length=200, verbose_name='Название')
-    # image = models.ImageField()
+    image = models.ImageField(
+        upload_to='recipes_images',
+        blank=True,
+        verbose_name='Фото'
+    )
     text = models.TextField(verbose_name='Описание')
-    # cooking_time = models.DurationField()
+    cooking_time = models.PositiveIntegerField(
+        verbose_name='Время приготовления (в минутах)'
+    )
     ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
@@ -157,8 +163,8 @@ class ShoppingList(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Рецепт в списке покупок'
-        verbose_name_plural = 'Рецепты в списках покупок'
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Список покупок'
 
         constraints = [
             models.UniqueConstraint(
