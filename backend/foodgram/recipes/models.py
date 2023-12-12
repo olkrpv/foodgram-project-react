@@ -16,7 +16,7 @@ class Ingredient(models.Model):
         verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
-        return f'{self.name} ({self.measurement_unit})'
+        return self.name
 
 
 class Tag(models.Model):
@@ -66,7 +66,7 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
 
     def __str__(self):
-        return f'{self.name} от {self.author}'
+        return self.name
 
 
 class RecipeIngredient(models.Model):
