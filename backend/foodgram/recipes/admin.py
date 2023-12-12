@@ -9,7 +9,7 @@ class RecipeIngredientInLine(admin.TabularInline):
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author')
+    list_display = ('name', 'author', 'favorite_users_count')
     list_filter = ('author', 'name', 'tags')
     inlines = (RecipeIngredientInLine,)
     filter_horizontal = ('tags',)
