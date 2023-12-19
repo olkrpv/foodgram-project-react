@@ -16,6 +16,7 @@ class Ingredient(models.Model):
     )
 
     class Meta:
+        ordering = ('name',)
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
@@ -24,9 +25,21 @@ class Ingredient(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=200, verbose_name='Название')
-    color_hex = models.CharField(max_length=7, verbose_name='Цветовой код')
-    slug = models.SlugField(max_length=64, unique=True, verbose_name='Слаг')
+    name = models.CharField(
+        max_length=200,
+        verbose_name='Название',
+        unique=True
+    )
+    color_hex = models.CharField(
+        max_length=7,
+        verbose_name='Цветовой код',
+        unique=True
+    )
+    slug = models.SlugField(
+        max_length=64,
+        verbose_name='Слаг',
+        unique=True,
+    )
 
     class Meta:
         verbose_name = 'Тег'
@@ -51,7 +64,6 @@ class Recipe(models.Model):
     )
     image = models.ImageField(
         upload_to='recipes_images',
-        blank=True,
         verbose_name='Фото'
     )
     text = models.TextField(verbose_name='Описание')
@@ -70,6 +82,11 @@ class Recipe(models.Model):
         verbose_name='Теги',
         db_index=True
     )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации',
+        db_index=True
+    )
 
     def favorite_users_count(self):
         return self.favorite_users.count()
@@ -77,6 +94,7 @@ class Recipe(models.Model):
     favorite_users_count.short_description = 'Число добавлений в избранное'
 
     class Meta:
+        ordering = ('-pub_date',)
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
