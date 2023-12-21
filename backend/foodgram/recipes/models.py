@@ -30,15 +30,17 @@ class Tag(models.Model):
         verbose_name='Название',
         unique=True
     )
-    color_hex = models.CharField(
+    color = models.CharField(
         max_length=7,
+        null=True,
         verbose_name='Цветовой код',
         unique=True
     )
     slug = models.SlugField(
-        max_length=64,
+        max_length=200,
+        null=True,
         verbose_name='Слаг',
-        unique=True,
+        unique=True
     )
 
     class Meta:
