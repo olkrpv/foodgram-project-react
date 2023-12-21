@@ -33,13 +33,13 @@ class Tag(models.Model):
     color = models.CharField(
         max_length=7,
         null=True,
-        verbose_name='Цветовой код',
+        verbose_name='Цвет в HEX',
         unique=True
     )
     slug = models.SlugField(
         max_length=200,
         null=True,
-        verbose_name='Слаг',
+        verbose_name='Уникальный слаг',
         unique=True
     )
 
