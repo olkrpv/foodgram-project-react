@@ -6,7 +6,11 @@ from django.utils.translation import gettext_lazy as _
 class CustomUser(AbstractUser):
     """Кастомный класс пользователя."""
 
-    email = models.EmailField(_('email address'), unique=True)
+    email = models.EmailField(
+        _('email address'),
+        max_length=254,
+        unique=True
+    )
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
