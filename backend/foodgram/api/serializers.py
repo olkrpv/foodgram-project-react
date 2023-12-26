@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed
 
 from recipes.models import Ingredient, Recipe, Tag, RecipeIngredient, Follow
 from users.models import CustomUser
