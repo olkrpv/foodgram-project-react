@@ -18,11 +18,6 @@ class UserSerializer(serializers.ModelSerializer):
             return False
         return Follow.objects.filter(user=current_user, following=obj).exists()
 
-    # def to_representation(self, instance):
-    #     if self.context['request'].user.is_anonymous:
-    #         raise AuthenticationFailed()
-    #     return super().to_representation(instance)
-
 
 class TagSerializer(serializers.ModelSerializer):
 
@@ -53,7 +48,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    tags = TagSerializer(read_only=True, many=True)
+    tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
 
@@ -76,3 +71,5 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_in_shopping_cart(self, obj):
         # TODO
         return False
+
+
