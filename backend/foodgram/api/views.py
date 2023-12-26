@@ -1,9 +1,23 @@
 from rest_framework import viewsets, filters
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from djoser.views import UserViewSet
 
 from recipes.models import Tag, Ingredient, Recipe
 
 from .serializers import TagSerializer, IngredientSerializer, RecipeSerializer
+
+
+class CustomUserViewSet(UserViewSet):
+
+    @action(
+        methods=["get"],
+        detail=False,
+        permission_classes=(IsAuthenticated,)
+    )
+    def me(self, request, *args, **kwargs):
+        self.get_object = self.get_instance
+        return self.retrieve(request, *args, **kwargs)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
