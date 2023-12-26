@@ -1,7 +1,27 @@
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 
-from recipes.models import Ingredient, Recipe, Tag, RecipeIngredient
-from users.serializers import UserSerializer
+from recipes.models import Ingredient, Recipe, Tag, RecipeIngredient, Follow
+from users.models import CustomUser
+
+
+class UserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed')
+
+    def get_is_subscribed(self, obj):
+        current_user = self.context['request'].user
+        if current_user.is_anonymous:
+            return False
+        return Follow.objects.filter(user=current_user, following=obj).exists()
+
+    # def to_representation(self, instance):
+    #     if self.context['request'].user.is_anonymous:
+    #         raise AuthenticationFailed()
+    #     return super().to_representation(instance)
 
 
 class TagSerializer(serializers.ModelSerializer):
