@@ -1,11 +1,11 @@
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
 from djoser.views import UserViewSet
 
 from recipes.models import Tag, Ingredient, Recipe
 
-from .serializers import TagSerializer, IngredientSerializer, RecipeListDetailSerializer
+from .serializers import TagSerializer, IngredientSerializer, RecipeListDetailSerializer, RecipeCreateUpdateSerializer
 
 
 class CustomUserViewSet(UserViewSet):
@@ -38,5 +38,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeListDetailSerializer
     permission_classes = (AllowAny,)
+
+    def get_serializer_class(self):
+        if self.request.method in SAFE_METHODS:
+            return RecipeListDetailSerializer
+        return RecipeCreateUpdateSerializer
