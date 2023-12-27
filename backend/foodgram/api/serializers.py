@@ -161,15 +161,31 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
 
         for ingredient in ingredients:
-            current_ingredient = Ingredient.objects.get(id=ingredient['id'].id)
-            RecipeIngredient.objects.create(recipe=recipe,
-                                            ingredient=current_ingredient,
-                                            amount=ingredient['amount']
-                                            )
+            RecipeIngredient.objects.create(
+                recipe=recipe,
+                ingredient=ingredient['id'],
+                amount=ingredient['amount']
+            )
 
         recipe.tags.set(tags)
 
         return recipe
+
+    def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients', None)
+        tags = validated_data.pop('tags', None)
+        if ingredients is not None:
+            instance.ingredients.clear()
+
+            for ingredient in ingredients:
+                RecipeIngredient.objects.create(
+                    recipe=instance,
+                    ingredient=ingredient['id'],
+                    amount=ingredient['amount']
+                )
+        if tags is not None:
+            instance.tags.set(tags)
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
