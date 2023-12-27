@@ -5,7 +5,7 @@ from djoser.views import UserViewSet
 
 from recipes.models import Tag, Ingredient, Recipe
 
-from .serializers import TagSerializer, IngredientSerializer, RecipeSerializer
+from .serializers import TagSerializer, IngredientSerializer, RecipeListDetailSerializer
 
 
 class CustomUserViewSet(UserViewSet):
@@ -38,5 +38,5 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    serializer_class = RecipeListDetailSerializer
     permission_classes = (AllowAny,)
