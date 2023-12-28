@@ -90,7 +90,7 @@ class Recipe(models.Model):
     )
 
     def favorite_users_count(self):
-        return self.favorite_users.count()
+        return self.favorites.count()
 
     favorite_users_count.short_description = 'Число добавлений в избранное'
 
@@ -157,13 +157,13 @@ class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='favorite_recipes',
+        related_name='favorites',
         verbose_name='Добавивший в избранное'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='favorite_users',
+        related_name='favorites',
         verbose_name='Избранный рецепт'
     )
 
@@ -186,13 +186,13 @@ class ShoppingList(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shoppinglist_recipes',
+        related_name='shoppinglist',
         verbose_name='Добавивший в список покупок'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='shoppinglist_users',
+        related_name='shoppinglist',
         verbose_name='Добавленный в список покупок'
     )
 
