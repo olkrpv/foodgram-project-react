@@ -1,6 +1,6 @@
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS, IsAuthenticatedOrReadOnly
 from djoser.views import UserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -8,6 +8,7 @@ from recipes.models import Tag, Ingredient, Recipe
 
 from .filters import RecipeFilter
 from .serializers import TagSerializer, IngredientSerializer, RecipeListDetailSerializer, RecipeCreateUpdateSerializer
+from .permissions import IsOwnerOrReadOnly
 
 
 class CustomUserViewSet(UserViewSet):
@@ -40,7 +41,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 

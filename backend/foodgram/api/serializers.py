@@ -111,6 +111,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True, default=serializers.CurrentUserDefault())
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
+    cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = Recipe
@@ -132,8 +133,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Добавьте хотя бы один ингредиент.')
 
         ingredients_list = []
-        for item in ingredients:
-            ingredient = get_object_or_404(Ingredient, id=item['id'].id)
+        for ingredient in ingredients:
+            # ingredient = get_object_or_404(Ingredient, id=item['id'].id)
             if ingredient in ingredients_list:
                 raise serializers.ValidationError('Вы уже добавили этот ингредиент.')
             ingredients_list.append(ingredient)
@@ -146,8 +147,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Добавьте хотя бы один тег.')
 
         tag_list = []
-        for item in tags:
-            tag = get_object_or_404(Tag, id=item.id)
+        for tag in tags:
+            # tag = get_object_or_404(Tag, id=item.id)
             if tag in tag_list:
                 raise serializers.ValidationError('Вы уже добавили этот тег.')
             tag_list.append(tag)
