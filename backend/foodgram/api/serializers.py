@@ -1,18 +1,16 @@
 import base64
 
 from rest_framework import serializers
-from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
 
-from recipes.models import Ingredient, Recipe, Tag, RecipeIngredient, Follow, Favorite, ShoppingList
-from users.models import CustomUser
+from recipes.models import User, Ingredient, Recipe, Tag, RecipeIngredient, Follow, Favorite, ShoppingList
 
 
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
-        model = CustomUser
+        model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
@@ -201,13 +199,22 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return representation
 
 
+class RecipeMiniSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения рецептов в списке подписок пользователя."""
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
+class FollowSerializer(UserSerializer):
+    recipes = RecipeMiniSerializer(many=True, read_only=True)
+    recipes_count = serializers.SerializerMethodField()
 
+    class Meta:
+        model = User
+        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
 
-
-
-
-
-
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
 
