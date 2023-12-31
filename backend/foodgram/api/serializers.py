@@ -207,25 +207,38 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
-class FollowSerializer(UserSerializer):
-    recipes = RecipeMiniSerializer(many=True, read_only=True)
+class FollowSerializer(serializers.ModelSerializer):
+    email = serializers.ReadOnlyField(source='following.email')
+    id = serializers.ReadOnlyField(source='following.id')
+    username = serializers.ReadOnlyField(source='following.username')
+    first_name = serializers.ReadOnlyField(source='following.first_name')
+    last_name = serializers.ReadOnlyField(source='following.last_name')
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = User
-        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
+        model = Follow
+        fields = (
+            'email', 'id', 'username', 'first_name',
+            'last_name', 'is_subscribed', 'recipes', 'recipes_count'
+        )
+
+    def get_is_subscribed(self, obj):
+        user = self.context['request'].user
+        following_user = obj.following
+        return Follow.objects.filter(user=user, following=following_user).exists()
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes_limit = request.GET.get('recipes_limit', None)
+        recipes = Recipe.objects.filter(author=obj.following)
+        if recipes_limit is not None and recipes_limit.isdigit():
+            recipes = recipes[:int(recipes_limit)]
+        return RecipeMiniSerializer(recipes, many=True).data
 
     def get_recipes_count(self, obj):
-        return obj.recipes.count()
+        return obj.following.recipes.count()
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        recipes_limit = self.context.get('recipes_limit', None)
-        if recipes_limit is not None:
-            representation['recipes'] = RecipeMiniSerializer(
-                instance.recipes.all()[:recipes_limit],
-                many=True
-            ).data
-        return representation
 
 

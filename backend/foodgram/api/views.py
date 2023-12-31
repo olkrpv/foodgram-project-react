@@ -1,9 +1,10 @@
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 from djoser.views import UserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import get_object_or_404
 
 from recipes.models import Tag, Ingredient, Recipe, Follow, User
 
@@ -23,22 +24,18 @@ class CustomUserViewSet(UserViewSet):
         self.get_object = self.get_instance
         return self.retrieve(request, *args, **kwargs)
 
-    @action(detail=False)
+    @action(
+        detail=False,
+        permission_classes=(IsAuthenticated,)
+    )
     def subscriptions(self, request):
         user = self.request.user
-        following = Follow.objects.filter(user=user).values('following')
-        following_users = User.objects.filter(id__in=following)
-        pages = self.paginate_queryset(following_users)
-
-        recipes_limit = request.query_params.get('recipes_limit', None)
-        serializer_context = {'request': request}
-        if recipes_limit is not None:
-            serializer_context['recipes_limit'] = int(recipes_limit)
-
+        following = Follow.objects.filter(user=user)
+        pages = self.paginate_queryset(following)
         serializer = FollowSerializer(
             pages,
             many=True,
-            context=serializer_context
+            context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
 
