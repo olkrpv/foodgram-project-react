@@ -218,3 +218,14 @@ class FollowSerializer(UserSerializer):
     def get_recipes_count(self, obj):
         return obj.recipes.count()
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        recipes_limit = self.context.get('recipes_limit', None)
+        if recipes_limit is not None:
+            representation['recipes'] = RecipeMiniSerializer(
+                instance.recipes.all()[:recipes_limit],
+                many=True
+            ).data
+        return representation
+
+

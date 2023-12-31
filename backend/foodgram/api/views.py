@@ -29,10 +29,16 @@ class CustomUserViewSet(UserViewSet):
         following = Follow.objects.filter(user=user).values('following')
         following_users = User.objects.filter(id__in=following)
         pages = self.paginate_queryset(following_users)
+
+        recipes_limit = request.query_params.get('recipes_limit', None)
+        serializer_context = {'request': request}
+        if recipes_limit is not None:
+            serializer_context['recipes_limit'] = int(recipes_limit)
+
         serializer = FollowSerializer(
             pages,
             many=True,
-            context={'request': request}
+            context=serializer_context
         )
         return self.get_paginated_response(serializer.data)
 
