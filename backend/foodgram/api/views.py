@@ -6,10 +6,17 @@ from djoser.views import UserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 
-from recipes.models import Tag, Ingredient, Recipe, Follow, User
+from recipes.models import Tag, Ingredient, Recipe, Follow, User, Favorite
 
 from .filters import RecipeFilter
-from .serializers import TagSerializer, IngredientSerializer, RecipeListDetailSerializer, RecipeCreateUpdateSerializer, FollowSerializer
+from .serializers import (
+    TagSerializer,
+    IngredientSerializer,
+    RecipeListDetailSerializer,
+    RecipeCreateUpdateSerializer,
+    FollowSerializer,
+    RecipeMiniSerializer
+)
 from .permissions import IsOwnerOrReadOnly
 
 
@@ -96,3 +103,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @action(
+        methods=['post', 'delete'],
+        detail=True,
+        permission_classes=(IsAuthenticated,)
+    )
+    def favorite(self, request, *args, **kwargs):
+        user = self.request.user
+        recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
+        favorite_exists = Favorite.objects.filter(user=user, recipe=recipe).exists()
+
+        if request.method == 'POST':
+            if favorite_exists:
+                return Response(
+                    {'errors': 'Вы уже добавили этот рецепт в избранное.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            Favorite.objects.create(user=user, recipe=recipe)
+            serializer = RecipeMiniSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if favorite_exists:
+            Favorite.objects.get(user=user, recipe=recipe).delete()
+            return Response(
+                status=status.HTTP_204_NO_CONTENT
+            )
+        return Response(
+            {'errors': 'Этого рецепта нет в избранном.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
