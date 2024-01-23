@@ -6,7 +6,7 @@ from djoser.views import UserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 
-from recipes.models import Tag, Ingredient, Recipe, Follow, User, Favorite
+from recipes.models import Tag, Ingredient, Recipe, Follow, User, Favorite, ShoppingList
 
 from .filters import RecipeFilter
 from .serializers import (
@@ -146,4 +146,40 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'errors': 'Этого рецепта нет в избранном.'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @action(
+        methods=['post', 'delete'],
+        detail=True,
+        permission_classes=(IsAuthenticated,)
+    )
+    def shopping_cart(self, request, *args, **kwargs):
+        user = self.request.user
+        recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
+        is_in_shopping_cart = ShoppingList.objects.filter(user=user, recipe=recipe).exists()
+
+        if request.method == 'POST':
+            if not Recipe.objects.filter(id=self.kwargs.get('pk')).exists():
+                return Response(
+                    {'errors': 'Такого рецепта не существует.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if is_in_shopping_cart:
+                return Response(
+                    {'errors': 'Вы уже добавили этот рецепт в список покупок.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            ShoppingList.objects.create(user=user, recipe=recipe)
+            serializer = RecipeMiniSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if is_in_shopping_cart:
+            ShoppingList.objects.get(user=user, recipe=recipe).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {'errors': 'Этого рецепта нет в списке покупок.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
 
