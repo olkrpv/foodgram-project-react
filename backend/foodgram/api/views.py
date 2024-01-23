@@ -39,6 +39,33 @@ class CustomUserViewSet(UserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
+    @action(
+        methods=['post', 'delete'],
+        detail=True,
+        permission_classes=(IsAuthenticated,)
+    )
+    def subscribe(self, request, *args, **kwargs):
+        user = self.request.user
+        author = get_object_or_404(User, id=self.kwargs.get('id'))
+
+        if request.method == 'POST':
+            serializer = FollowSerializer(
+                data=request.data,
+                context={'request': request, 'author': author}
+            )
+            if serializer.is_valid():
+                serializer.save(user=user, following=author)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if Follow.objects.filter(user=user, following=author).exists():
+            Follow.objects.get(user=user, following=author).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {'errors': 'Вы не подписаны на этого пользователя'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()

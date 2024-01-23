@@ -1,6 +1,7 @@
 import base64
 
 from rest_framework import serializers
+from rest_framework import status
 from django.core.files.base import ContentFile
 
 from recipes.models import User, Ingredient, Recipe, Tag, RecipeIngredient, Follow, Favorite, ShoppingList
@@ -239,6 +240,21 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return obj.following.recipes.count()
+
+    def validate(self, data):
+        user = self.context['request'].user
+        author = self.context['author']
+        if user == author:
+            raise serializers.ValidationError(
+                detail='Вы не можете подписаться на самого себя.',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        if Follow.objects.filter(user=user, following=author):
+            raise serializers.ValidationError(
+                detail='Вы уже подписаны на этого пользователя.',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        return data
 
 
 
