@@ -124,11 +124,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, *args, **kwargs):
         user = self.request.user
-        recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
-        favorite_exists = Favorite.objects.filter(user=user, recipe=recipe).exists()
+        recipe_id = self.kwargs.get('pk')
 
         if request.method == 'POST':
-            if favorite_exists:
+            if not Recipe.objects.filter(id=recipe_id).exists():
+                return Response(
+                    {'errors': 'Такого рецепта не существует'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            recipe = Recipe.objects.get(id=recipe_id)
+            if Favorite.objects.filter(user=user, recipe=recipe).exists():
                 return Response(
                     {'errors': 'Вы уже добавили этот рецепт в избранное.'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -137,7 +143,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer = RecipeMiniSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if favorite_exists:
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        if Favorite.objects.filter(user=user, recipe=recipe).exists():
             Favorite.objects.get(user=user, recipe=recipe).delete()
             return Response(
                 status=status.HTTP_204_NO_CONTENT
@@ -154,17 +161,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, *args, **kwargs):
         user = self.request.user
-        recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
-        is_in_shopping_cart = ShoppingList.objects.filter(user=user, recipe=recipe).exists()
+        recipe_id = self.kwargs.get('pk')
 
         if request.method == 'POST':
-            if not Recipe.objects.filter(id=self.kwargs.get('pk')).exists():
+            if not Recipe.objects.filter(id=recipe_id).exists():
                 return Response(
-                    {'errors': 'Такого рецепта не существует.'},
+                    {'errors': 'Такого рецепта не существует'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            if is_in_shopping_cart:
+            recipe = Recipe.objects.get(id=recipe_id)
+            if ShoppingList.objects.filter(user=user, recipe=recipe).exists():
                 return Response(
                     {'errors': 'Вы уже добавили этот рецепт в список покупок.'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -173,7 +180,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer = RecipeMiniSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if is_in_shopping_cart:
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        if ShoppingList.objects.filter(user=user, recipe=recipe).exists():
             ShoppingList.objects.get(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
