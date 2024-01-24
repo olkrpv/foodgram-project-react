@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from djoser.views import UserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
+from django.db.models import Sum
+from django.http import HttpResponse
 
 from recipes.models import Tag, Ingredient, Recipe, Follow, User, Favorite, ShoppingList
 
@@ -188,6 +190,36 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'errors': 'Этого рецепта нет в списке покупок.'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @action(
+        methods=['get'],
+        detail=False,
+        permission_classes=(IsAuthenticated,)
+    )
+    def download_shopping_cart(self, request):
+        user = self.request.user
+        recipes = Recipe.objects.filter(shoppinglist__user=user)
+        if not recipes.exists():
+            return Response(
+                {'errors': 'Список покупок пуст.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        ingredients = Ingredient.objects.filter(recipeingredient__recipe__in=recipes)
+        total_ingredients = ingredients.annotate(
+            total=Sum('recipeingredient__amount')
+        ).values('name', 'measurement_unit', 'total')
+
+        file_data = 'Список покупок:\n\n'
+        for item in total_ingredients:
+            file_data += f'- {item["name"]} ({item["measurement_unit"]}) - {item["total"]}\n'
+
+        filename = 'shopping_cart.txt'
+        response = HttpResponse(file_data, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
+
+
+
 
 
 
