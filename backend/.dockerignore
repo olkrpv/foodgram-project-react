@@ -1,0 +1,7 @@
+venv
+.git
+foodgram/db.sqlite3.bak
+.idea
+.vscode
+.env
+db.sqlite3
