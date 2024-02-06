@@ -139,6 +139,7 @@ USE_TZ = True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/app/media/'
+# MEDIA_ROOT = BASE_DIR / 'media'
 
 STATIC_URL = '/static/django/'
 STATIC_ROOT = '/app/static_django/'

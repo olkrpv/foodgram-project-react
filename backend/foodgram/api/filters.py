@@ -1,16 +1,24 @@
 from django_filters import rest_framework as filters
+from django.db.models import Q
 
 from recipes.models import Recipe
 
 
 class RecipeFilter(filters.FilterSet):
-    tags = filters.CharFilter(field_name='tags__slug')
+    tags = filters.CharFilter(method='filter_tags')  # field_name='tags__slug')
     is_favorited = filters.BooleanFilter(method='filter_favorited')
     is_in_shopping_cart = filters.BooleanFilter(method='filter_shopping_cart')
 
     class Meta:
         model = Recipe
         fields = ('author', 'tags')
+
+    def filter_tags(self, queryset, name, value):
+        values = self.request.GET.getlist('tags')
+        q_objects = Q()
+        for tag in values:
+            q_objects |= Q(tags__slug=tag)
+        return queryset.filter(q_objects)
 
     def filter_favorited(self, queryset, name, value):
         user = self.request.user
