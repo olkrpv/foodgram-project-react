@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = 'Загружает ингредиенты из файла data/ingredients.csv'
 
     def handle(self, *args, **options):
-        with open('../../data/ingredients.csv') as f:
+        with open('ingredients.csv') as f:
             reader = csv.reader(f)
             created_count = 0
             for row in reader:
