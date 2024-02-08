@@ -186,7 +186,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe = Recipe.objects.get(id=recipe_id)
             if ShoppingList.objects.filter(user=user, recipe=recipe).exists():
                 return Response(
-                    {'errors': 'Вы уже добавили этот рецепт в список покупок.'},
+                    {
+                        'errors':
+                            'Вы уже добавили этот рецепт в список покупок.'
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
             ShoppingList.objects.create(user=user, recipe=recipe)
@@ -224,7 +227,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         file_data = 'Список покупок:\n\n'
         for item in total_ingredients:
-            file_data += f'- {item["name"]} ({item["measurement_unit"]}) - {item["total"]}\n'
+            file_data += (
+                f'- {item["name"]} '
+                f'({item["measurement_unit"]}) - {item["total"]}\n'
+            )
 
         filename = 'shopping_cart.txt'
         response = HttpResponse(file_data, content_type='text/plain')
