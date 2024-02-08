@@ -1,5 +1,6 @@
-from django_filters import rest_framework as filters
 from django.db.models import Q
+
+from django_filters import rest_framework as filters
 
 from recipes.models import Recipe
 
@@ -18,7 +19,7 @@ class RecipeFilter(filters.FilterSet):
         q_objects = Q()
         for tag in values:
             q_objects |= Q(tags__slug=tag)
-        return queryset.filter(q_objects)
+        return queryset.filter(q_objects).distinct()
 
     def filter_favorited(self, queryset, name, value):
         user = self.request.user

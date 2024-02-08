@@ -1,10 +1,19 @@
 import base64
 
-from rest_framework import serializers
-from rest_framework import status
 from django.core.files.base import ContentFile
 
-from recipes.models import User, Ingredient, Recipe, Tag, RecipeIngredient, Follow, Favorite, ShoppingList
+from rest_framework import serializers
+
+from recipes.models import (
+    Favorite,
+    Follow,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingList,
+    Tag,
+    User
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,7 +21,10 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed')
+        fields = (
+            'email', 'id', 'username',
+            'first_name', 'last_name', 'is_subscribed'
+        )
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user
@@ -40,7 +52,9 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.StringRelatedField(
         source='ingredient.measurement_unit'
     )
-    id = serializers.PrimaryKeyRelatedField(source='ingredient.id', read_only=True)
+    id = serializers.PrimaryKeyRelatedField(
+        source='ingredient.id', read_only=True
+    )
 
     class Meta:
         model = RecipeIngredient
@@ -70,7 +84,9 @@ class RecipeListDetailSerializer(serializers.ModelSerializer):
         current_user = self.context['request'].user
         if current_user.is_anonymous:
             return False
-        return list_model.objects.filter(user=current_user, recipe=obj).exists()
+        return list_model.objects.filter(
+            user=current_user, recipe=obj
+        ).exists()
 
     def get_is_favorited(self, obj):
         return self.is_item_in_list(obj, Favorite)
@@ -101,13 +117,18 @@ class IngredientInRecipeCreateSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    ingredients = IngredientInRecipeCreateSerializer(many=True, write_only=True)
+    ingredients = IngredientInRecipeCreateSerializer(
+        many=True, write_only=True
+    )
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Tag.objects.all()
     )
     image = Base64ImageField()
-    author = UserSerializer(read_only=True, default=serializers.CurrentUserDefault())
+    author = UserSerializer(
+        read_only=True,
+        default=serializers.CurrentUserDefault()
+    )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     cooking_time = serializers.IntegerField(min_value=1)
@@ -129,13 +150,17 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def validate_ingredients(self, value):
         ingredients = value
         if not ingredients:
-            raise serializers.ValidationError('Добавьте хотя бы один ингредиент.')
+            raise serializers.ValidationError(
+                'Добавьте хотя бы один ингредиент.'
+            )
 
         ingredients_list = []
         for ingredient in ingredients:
             # ingredient = get_object_or_404(Ingredient, id=item['id'].id)
             if ingredient in ingredients_list:
-                raise serializers.ValidationError('Вы уже добавили этот ингредиент.')
+                raise serializers.ValidationError(
+                    'Вы уже добавили этот ингредиент.'
+                )
             ingredients_list.append(ingredient)
 
         return value
@@ -228,7 +253,9 @@ class FollowSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
         following_user = obj.following
-        return Follow.objects.filter(user=user, following=following_user).exists()
+        return Follow.objects.filter(
+            user=user, following=following_user
+        ).exists()
 
     def get_recipes(self, obj):
         request = self.context.get('request')
@@ -240,4 +267,3 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return obj.following.recipes.count()
-

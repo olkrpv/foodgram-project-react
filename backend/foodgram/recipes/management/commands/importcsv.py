@@ -14,7 +14,9 @@ class Command(BaseCommand):
             created_count = 0
             for row in reader:
                 name, unit = row
-                ingredient, created = Ingredient.objects.get_or_create(name=name, measurement_unit=unit)
+                ingredient, created = Ingredient.objects.get_or_create(
+                    name=name, measurement_unit=unit
+                )
                 if created:
                     created_count += 1
 
@@ -23,4 +25,3 @@ class Command(BaseCommand):
                     f'Добавлено {created_count} ингредиентов'
                 )
             )
-

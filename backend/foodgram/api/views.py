@@ -1,25 +1,34 @@
-from rest_framework import viewsets, filters, status
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
-from rest_framework.response import Response
-from djoser.views import UserViewSet
-from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import get_object_or_404
 from django.db.models import Sum
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 
-from recipes.models import Tag, Ingredient, Recipe, Follow, User, Favorite, ShoppingList
+from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
+from recipes.models import (
+    Favorite,
+    Follow,
+    Ingredient,
+    Recipe,
+    ShoppingList,
+    Tag,
+    User
+)
 
 from .filters import RecipeFilter
-from .serializers import (
-    TagSerializer,
-    IngredientSerializer,
-    RecipeListDetailSerializer,
-    RecipeCreateUpdateSerializer,
-    FollowSerializer,
-    RecipeMiniSerializer
-)
 from .permissions import IsOwnerOrReadOnly
+from .serializers import (
+    FollowSerializer,
+    IngredientSerializer,
+    RecipeCreateUpdateSerializer,
+    RecipeListDetailSerializer,
+    RecipeMiniSerializer,
+    TagSerializer
+)
 
 
 class CustomUserViewSet(UserViewSet):
@@ -56,7 +65,9 @@ class CustomUserViewSet(UserViewSet):
     def subscribe(self, request, *args, **kwargs):
         user = self.request.user
         author = get_object_or_404(User, id=self.kwargs.get('id'))
-        is_subscribed = Follow.objects.filter(user=user, following=author).exists()
+        is_subscribed = Follow.objects.filter(
+            user=user, following=author
+        ).exists()
 
         if request.method == 'POST':
             if is_subscribed:
@@ -204,7 +215,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 {'errors': 'Список покупок пуст.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        ingredients = Ingredient.objects.filter(recipeingredient__recipe__in=recipes)
+        ingredients = Ingredient.objects.filter(
+            recipeingredient__recipe__in=recipes
+        )
         total_ingredients = ingredients.annotate(
             total=Sum('recipeingredient__amount')
         ).values('name', 'measurement_unit', 'total')
@@ -217,9 +230,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response = HttpResponse(file_data, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response
-
-
-
-
-
-
