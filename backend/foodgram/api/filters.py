@@ -2,24 +2,21 @@ from django.db.models import Q
 
 from django_filters import rest_framework as filters
 
-from recipes.models import Recipe
+from recipes.models import Recipe, Tag
 
 
 class RecipeFilter(filters.FilterSet):
-    tags = filters.CharFilter(method='filter_tags')  # field_name='tags__slug')
+    tags = filters.ModelMultipleChoiceFilter(
+        field_name='tags__slug',
+        to_field_name='slug',
+        queryset=Tag.objects.all()
+    )
     is_favorited = filters.BooleanFilter(method='filter_favorited')
     is_in_shopping_cart = filters.BooleanFilter(method='filter_shopping_cart')
 
     class Meta:
         model = Recipe
         fields = ('author', 'tags')
-
-    def filter_tags(self, queryset, name, value):
-        values = self.request.GET.getlist('tags')
-        q_objects = Q()
-        for tag in values:
-            q_objects |= Q(tags__slug=tag)
-        return queryset.filter(q_objects).distinct()
 
     def filter_favorited(self, queryset, name, value):
         user = self.request.user
