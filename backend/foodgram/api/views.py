@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import Sum, Exists, OuterRef, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
@@ -58,46 +58,47 @@ class CustomUserViewSet(UserViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(
-        methods=['post', 'delete'],
+        methods=['post'],
         detail=True,
         permission_classes=(IsAuthenticated,)
     )
     def subscribe(self, request, *args, **kwargs):
         user = self.request.user
         author = get_object_or_404(User, id=self.kwargs.get('id'))
-        is_subscribed = Follow.objects.filter(
-            user=user, following=author
-        ).exists()
 
-        if request.method == 'POST':
-            if is_subscribed:
-                return Response(
-                    {'errors': 'Вы уже подписаны на этого автора.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if user == author:
-                return Response(
-                    {'errors': 'Вы не можете подписаться на самого себя.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            Follow.objects.create(user=user, following=author)
-            subscription = Follow.objects.get(user=user, following=author)
-            serializer = FollowSerializer(
-                subscription,
-                context={'request': request}
-            )
+        if Follow.objects.filter(user=user, following=author).exists():
             return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED
+                {'errors': 'Вы уже подписаны на этого автора.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if user == author:
+            return Response(
+                {'errors': 'Вы не можете подписаться на самого себя.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        if is_subscribed:
+        Follow.objects.create(user=user, following=author)
+        subscription = Follow.objects.get(user=user, following=author)
+        serializer = FollowSerializer(
+            subscription,
+            context={'request': request}
+        )
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, *args, **kwargs):
+        user = self.request.user
+        author = get_object_or_404(User, id=self.kwargs.get('id'))
+        if Follow.objects.filter(user=user, following=author).exists():
             Follow.objects.get(user=user, following=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
             {'errors': 'Вы не подписаны на этого пользователя'},
             status=status.HTTP_400_BAD_REQUEST
-        )
+       )
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -117,10 +118,38 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     permission_classes = (IsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Recipe.objects.all().select_related(
+            'author'
+        ).prefetch_related(
+            'tags', 'ingredients'
+        )
+
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorited=Exists(
+                    Favorite.objects.filter(
+                        user=user, recipe=OuterRef('id')
+                    )
+                ),
+                is_in_shopping_cart=Exists(
+                    ShoppingList.objects.filter(
+                        user=user, recipe=OuterRef('id')
+                    )
+                )
+            )
+        else:
+            queryset = queryset.annotate(
+                is_favorited=Value(False),
+                is_in_shopping_cart=Value(False)
+            )
+
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:

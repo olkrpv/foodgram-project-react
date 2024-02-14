@@ -12,7 +12,7 @@ from .views import (
 router = DefaultRouter()
 router.register('tags', TagViewSet)
 router.register('ingredients', IngredientViewSet)
-router.register('recipes', RecipeViewSet)
+router.register('recipes', RecipeViewSet, basename='recipe')
 router.register('users', CustomUserViewSet)
 
 urlpatterns = [
