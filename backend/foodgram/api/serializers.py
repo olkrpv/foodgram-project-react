@@ -2,7 +2,7 @@ import base64
 
 from django.core.files.base import ContentFile
 
-from rest_framework import serializers
+from rest_framework import serializers, status
 
 from recipes.models import (
     Favorite,
@@ -62,8 +62,10 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeListDetailSerializer(serializers.ModelSerializer):
-    is_favorited = serializers.BooleanField(read_only=True)
-    is_in_shopping_cart = serializers.BooleanField(read_only=True)
+    # is_favorited = serializers.BooleanField(read_only=True)
+    # is_in_shopping_cart = serializers.BooleanField(read_only=True)
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
@@ -79,6 +81,20 @@ class RecipeListDetailSerializer(serializers.ModelSerializer):
         return RecipeIngredientSerializer(
             RecipeIngredient.objects.filter(recipe=obj).all(), many=True
         ).data
+
+    def is_item_in_list(self, obj, list_model):
+        current_user = self.context['request'].user
+        if current_user.is_anonymous:
+            return False
+        return list_model.objects.filter(
+            user=current_user, recipe=obj
+        ).exists()
+
+    def get_is_favorited(self, obj):
+        return self.is_item_in_list(obj, Favorite)
+
+    def get_is_in_shopping_cart(self, obj):
+        return self.is_item_in_list(obj, ShoppingList)
 
 
 class Base64ImageField(serializers.ImageField):
@@ -227,6 +243,24 @@ class FollowSerializer(serializers.ModelSerializer):
             'last_name', 'is_subscribed', 'recipes', 'recipes_count'
         )
 
+    def validate(self, data):
+        user = self.context.get('request').user
+        author = self.context.get('author')
+
+        if Follow.objects.filter(user=user, following=author).exists():
+            raise serializers.ValidationError(
+                detail='Вы уже подписаны на этого автора.',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
+        if user == author:
+            raise serializers.ValidationError(
+                detail='Вы не можете подписаться на самого себя.',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
+        return data
+
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
         following_user = obj.following
@@ -244,3 +278,46 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return obj.following.recipes.count()
+
+
+class BaseFavoriteShoppingListSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='recipe.id')
+    name = serializers.ReadOnlyField(source='recipe.name')
+    image = serializers.ImageField(source='recipe.image', read_only=True)
+    cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
+
+    class Meta:
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+    def validate(self, data):
+        model = self.Meta.model
+        user = self.context.get('user')
+        recipe_id = self.context.get('recipe_id')
+
+        if not Recipe.objects.filter(id=recipe_id).exists():
+            raise serializers.ValidationError(
+                detail='Такого рецепта не существует.',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
+        recipe = Recipe.objects.get(id=recipe_id)
+
+        if model.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError(
+                detail='Вы уже добавили этот рецепт.',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
+        return data
+
+
+class FavoriteSerializer(BaseFavoriteShoppingListSerializer):
+
+    class Meta(BaseFavoriteShoppingListSerializer.Meta):
+        model = Favorite
+
+
+class ShoppingListSerializer(BaseFavoriteShoppingListSerializer):
+
+    class Meta(BaseFavoriteShoppingListSerializer.Meta):
+        model = ShoppingList
