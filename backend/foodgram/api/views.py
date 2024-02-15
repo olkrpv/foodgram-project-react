@@ -147,15 +147,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(
-        methods=['post'],
-        detail=True,
-        permission_classes=(IsAuthenticated,)
-    )
-    def favorite(self, request, *args, **kwargs):
+    def post_favorite_shopping_cart(self, request, serializer_class):
         user = self.request.user
         recipe_id = self.kwargs.get('pk')
-        serializer = FavoriteSerializer(
+        serializer = serializer_class(
             data=request.data,
             context={'user': user, 'recipe_id': recipe_id}
         )
@@ -163,22 +158,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer.save(user=user, recipe=Recipe.objects.get(id=recipe_id))
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @favorite.mapping.delete
-    def delete_favorite(self, request, *args, **kwargs):
+    def delete_favorite_shopping_cart(self, request, model, error):
         user = self.request.user
         recipe_id = self.kwargs.get('pk')
         recipe = get_object_or_404(Recipe, id=recipe_id)
 
-        if Favorite.objects.filter(user=user, recipe=recipe).exists():
-            Favorite.objects.get(user=user, recipe=recipe).delete()
+        if model.objects.filter(user=user, recipe=recipe).exists():
+            model.objects.get(user=user, recipe=recipe).delete()
             return Response(
                 status=status.HTTP_204_NO_CONTENT
             )
 
         return Response(
-            {'errors': 'Этого рецепта нет в избранном.'},
+            {'errors': error},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @action(
+        methods=['post'],
+        detail=True,
+        permission_classes=(IsAuthenticated,)
+    )
+    def favorite(self, request, *args, **kwargs):
+        return self.post_favorite_shopping_cart(request, FavoriteSerializer)
+
+    @favorite.mapping.delete
+    def delete_favorite(self, request, *args, **kwargs):
+        error = 'Этого рецепта нет в избранном.'
+        return self.delete_favorite_shopping_cart(request, Favorite, error)
 
     @action(
         methods=['post'],
@@ -186,31 +193,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def shopping_cart(self, request, *args, **kwargs):
-        user = self.request.user
-        recipe_id = self.kwargs.get('pk')
-
-        serializer = ShoppingListSerializer(
-            data=request.data,
-            context={'user': user, 'recipe_id': recipe_id}
-        )
-        if serializer.is_valid(raise_exception=True):
-            serializer.save(user=user, recipe=Recipe.objects.get(id=recipe_id))
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return self.post_favorite_shopping_cart(request, ShoppingListSerializer)
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, *args, **kwargs):
-        user = self.request.user
-        recipe_id = self.kwargs.get('pk')
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-
-        if ShoppingList.objects.filter(user=user, recipe=recipe).exists():
-            ShoppingList.objects.get(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(
-            {'errors': 'Этого рецепта нет в списке покупок.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        error = 'Этого рецепта нет в списке покупок.'
+        return self.delete_favorite_shopping_cart(request, ShoppingList, error)
 
     @action(
         methods=['get'],
