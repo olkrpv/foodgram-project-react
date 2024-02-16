@@ -1,17 +1,19 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+FIELD_MAX_LENGTH = 200
+
 User = get_user_model()
 
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=200,
+        max_length=FIELD_MAX_LENGTH,
         verbose_name='Название',
         db_index=True
     )
     measurement_unit = models.CharField(
-        max_length=200,
+        max_length=FIELD_MAX_LENGTH,
         verbose_name='Единица измерения'
     )
 
@@ -25,7 +27,7 @@ class Ingredient(models.Model):
 
 class Tag(models.Model):
     name = models.CharField(
-        max_length=200,
+        max_length=FIELD_MAX_LENGTH,
         verbose_name='Название',
         unique=True
     )
@@ -36,7 +38,7 @@ class Tag(models.Model):
         unique=True
     )
     slug = models.SlugField(
-        max_length=200,
+        max_length=FIELD_MAX_LENGTH,
         null=True,
         verbose_name='Уникальный слаг',
         unique=True
@@ -59,7 +61,7 @@ class Recipe(models.Model):
         db_index=True
     )
     name = models.CharField(
-        max_length=200,
+        max_length=FIELD_MAX_LENGTH,
         verbose_name='Название',
         db_index=True
     )
@@ -98,6 +100,13 @@ class Recipe(models.Model):
         ordering = ('-pub_date',)
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'name'],
+                name='unique_recipe_from_author'
+            )
+        ]
 
     def __str__(self):
         return self.name

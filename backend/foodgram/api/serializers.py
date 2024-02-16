@@ -3,6 +3,7 @@ import base64
 from django.core.files.base import ContentFile
 
 from rest_framework import serializers, status
+from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import (
     Favorite,
@@ -142,6 +143,13 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             'is_favorited', 'is_in_shopping_cart',
             'name', 'image', 'text', 'cooking_time'
         )
+
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Recipe.objects.all(),
+                fields=('author', 'name')
+            )
+        ]
 
     def get_is_favorited(self, obj):
         return False
