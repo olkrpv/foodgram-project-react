@@ -1,5 +1,11 @@
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# from io import BytesIO
+
 from django.db.models import Sum, Exists, OuterRef, Value
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import get_object_or_404
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -8,6 +14,7 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 from recipes.models import (
     Favorite,
@@ -200,19 +207,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         error = 'Этого рецепта нет в списке покупок.'
         return self.delete_favorite_shopping_cart(request, ShoppingList, error)
 
-    @action(
-        methods=['get'],
-        detail=False,
-        permission_classes=(IsAuthenticated,)
-    )
-    def download_shopping_cart(self, request):
+    def get_ingredients_list(self):
         user = self.request.user
         recipes = Recipe.objects.filter(shoppinglist__user=user)
+
         if not recipes.exists():
-            return Response(
-                {'errors': 'Список покупок пуст.'},
-                status=status.HTTP_400_BAD_REQUEST
+            raise ValidationError(
+                detail='Список покупок пуст.',
+                code=status.HTTP_400_BAD_REQUEST
             )
+
         ingredients = Ingredient.objects.filter(
             recipeingredient__recipe__in=recipes
         )
@@ -220,14 +224,41 @@ class RecipeViewSet(viewsets.ModelViewSet):
             total=Sum('recipeingredient__amount')
         ).values('name', 'measurement_unit', 'total')
 
-        file_data = 'Список покупок:\n\n'
-        for item in total_ingredients:
-            file_data += (
-                f'- {item["name"]} '
-                f'({item["measurement_unit"]}) - {item["total"]}\n'
-            )
+        return total_ingredients
 
-        filename = 'shopping_cart.txt'
-        response = HttpResponse(file_data, content_type='text/plain')
-        response['Content-Disposition'] = f'attachment; filename={filename}'
+    def generate_pdf_file(self):
+        from io import BytesIO
+
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer)
+
+        pdfmetrics.registerFont(TTFont('DejaVu', 'DejaVuSans.ttf'))
+        p.setFont('DejaVu', 12)
+
+        p.drawString(100, 750, 'Список покупок:')
+
+        total_ingredients = self.get_ingredients_list()
+        y = 700
+        for item in total_ingredients:
+            p.drawString(
+                100, y,
+                f'{item["name"]} ({item["measurement_unit"]}) - {item["total"]}'
+            )
+            y -= 20
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        return buffer
+
+    @action(
+        methods=['get'],
+        detail=False,
+        permission_classes=(IsAuthenticated,)
+    )
+    def download_shopping_cart(self, request):
+        filename = 'shopping_cart.pdf'
+        buffer = self.generate_pdf_file()
+        response = FileResponse(buffer, as_attachment=True, filename=filename)
         return response
