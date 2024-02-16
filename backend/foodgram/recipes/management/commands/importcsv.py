@@ -8,8 +8,16 @@ from recipes.models import Ingredient
 class Command(BaseCommand):
     help = 'Загружает ингредиенты из файла data/ingredients.csv'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            'filename',
+            type=str,
+            help='Путь до файла с ингредиентами'
+        )
+
     def handle(self, *args, **options):
-        with open('ingredients.csv') as f:
+        filename = options['filename']
+        with open(filename) as f:
             reader = csv.reader(f)
             created_count = 0
             for row in reader:
