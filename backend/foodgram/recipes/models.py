@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from colorfield.fields import ColorField
 
 FIELD_MAX_LENGTH = 200
 
@@ -31,12 +32,7 @@ class Tag(models.Model):
         verbose_name='Название',
         unique=True
     )
-    color = models.CharField(
-        max_length=7,
-        null=True,
-        verbose_name='Цвет в HEX',
-        unique=True
-    )
+    color = ColorField()
     slug = models.SlugField(
         max_length=FIELD_MAX_LENGTH,
         null=True,
