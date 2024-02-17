@@ -48,6 +48,36 @@ class Tag(models.Model):
         return self.name
 
 
+class RecipeQuerySet(models.QuerySet):
+    def with_favorite_shopping_info(self, user):
+        if user.is_authenticated:
+            return self.annotate(
+                is_favorited=models.Exists(
+                    Favorite.objects.filter(
+                        user=user, recipe=models.OuterRef('id')
+                    )
+                ),
+                is_in_shopping_cart=models.Exists(
+                    ShoppingList.objects.filter(
+                        user=user, recipe=models.OuterRef('id')
+                    )
+                )
+            )
+
+        return self.annotate(
+            is_favorited=models.Value(False),
+            is_in_shopping_cart=models.Value(False)
+        )
+
+
+class RecipeManager(models.Manager):
+    def get_queryset(self):
+        return RecipeQuerySet(self.model, using=self._db)
+
+    def with_favorite_shopping_info(self, user):
+        return self.get_queryset().with_favorite_shopping_info(user)
+
+
 class Recipe(models.Model):
     author = models.ForeignKey(
         User,
@@ -86,6 +116,8 @@ class Recipe(models.Model):
         verbose_name='Дата публикации',
         db_index=True
     )
+
+    objects = RecipeManager()
 
     def favorite_users_count(self):
         return self.favorites.count()

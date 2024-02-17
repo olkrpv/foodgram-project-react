@@ -63,10 +63,8 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeListDetailSerializer(serializers.ModelSerializer):
-    # is_favorited = serializers.BooleanField(read_only=True)
-    # is_in_shopping_cart = serializers.BooleanField(read_only=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(read_only=True)
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
@@ -82,20 +80,6 @@ class RecipeListDetailSerializer(serializers.ModelSerializer):
         return RecipeIngredientSerializer(
             RecipeIngredient.objects.filter(recipe=obj).all(), many=True
         ).data
-
-    def is_item_in_list(self, obj, list_model):
-        current_user = self.context['request'].user
-        if current_user.is_anonymous:
-            return False
-        return list_model.objects.filter(
-            user=current_user, recipe=obj
-        ).exists()
-
-    def get_is_favorited(self, obj):
-        return self.is_item_in_list(obj, Favorite)
-
-    def get_is_in_shopping_cart(self, obj):
-        return self.is_item_in_list(obj, ShoppingList)
 
 
 class Base64ImageField(serializers.ImageField):
@@ -132,8 +116,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         read_only=True,
         default=serializers.CurrentUserDefault()
     )
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True, default=False)
+    is_in_shopping_cart = serializers.BooleanField(read_only=True, default=False)
     cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
@@ -150,12 +134,6 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 fields=('author', 'name')
             )
         ]
-
-    def get_is_favorited(self, obj):
-        return False
-
-    def get_is_in_shopping_cart(self, obj):
-        return False
 
     def validate_ingredients(self, value):
         ingredients = value

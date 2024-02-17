@@ -112,39 +112,18 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     permission_classes = (IsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     queryset = Recipe.objects.all().select_related(
-    #         'author'
-    #     ).prefetch_related(
-    #         'tags', 'ingredients'
-    #     )
-    #
-    #     if user.is_authenticated:
-    #         queryset = queryset.annotate(
-    #             is_favorited=Exists(
-    #                 Favorite.objects.filter(
-    #                     user=user, recipe=OuterRef('id')
-    #                 )
-    #             ),
-    #             is_in_shopping_cart=Exists(
-    #                 ShoppingList.objects.filter(
-    #                     user=user, recipe=OuterRef('id')
-    #                 )
-    #             )
-    #         )
-    #     else:
-    #         queryset = queryset.annotate(
-    #             is_favorited=Value(False),
-    #             is_in_shopping_cart=Value(False)
-    #         )
-    #
-    #     return queryset
+    def get_queryset(self):
+        user = self.request.user
+
+        return Recipe.objects.all().select_related(
+            'author'
+        ).prefetch_related(
+            'tags', 'ingredients'
+        ).with_favorite_shopping_info(user)
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
