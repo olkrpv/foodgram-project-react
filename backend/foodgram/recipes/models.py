@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+
 from colorfield.fields import ColorField
 
 FIELD_MAX_LENGTH = 200

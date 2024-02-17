@@ -1,20 +1,17 @@
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-
-# from io import BytesIO
-
-from django.db.models import Sum, Exists, OuterRef, Value
-from django.http import HttpResponse, FileResponse
+from django.db.models import Sum
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 
 from recipes.models import (
     Favorite,
@@ -29,14 +26,13 @@ from recipes.models import (
 from .filters import RecipeFilter
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (
+    FavoriteSerializer,
     FollowSerializer,
     IngredientSerializer,
     RecipeCreateUpdateSerializer,
     RecipeListDetailSerializer,
-    RecipeMiniSerializer,
-    TagSerializer,
-    FavoriteSerializer,
-    ShoppingListSerializer
+    ShoppingListSerializer,
+    TagSerializer
 )
 
 
@@ -92,7 +88,7 @@ class CustomUserViewSet(UserViewSet):
         return Response(
             {'errors': 'Вы не подписаны на этого пользователя'},
             status=status.HTTP_400_BAD_REQUEST
-       )
+        )
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -179,7 +175,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def shopping_cart(self, request, *args, **kwargs):
-        return self.post_favorite_shopping_cart(request, ShoppingListSerializer)
+        return self.post_favorite_shopping_cart(
+            request,
+            ShoppingListSerializer
+        )
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, *args, **kwargs):
@@ -221,7 +220,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         for item in total_ingredients:
             p.drawString(
                 100, y,
-                f'{item["name"]} ({item["measurement_unit"]}) - {item["total"]}'
+                f'{item["name"]} ({item["measurement_unit"]}) - '
+                f'{item["total"]}'
             )
             y -= 20
 

@@ -117,7 +117,10 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         default=serializers.CurrentUserDefault()
     )
     is_favorited = serializers.BooleanField(read_only=True, default=False)
-    is_in_shopping_cart = serializers.BooleanField(read_only=True, default=False)
+    is_in_shopping_cart = serializers.BooleanField(
+        read_only=True,
+        default=False
+    )
     cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
