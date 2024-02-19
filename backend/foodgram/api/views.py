@@ -82,11 +82,12 @@ class CustomUserViewSet(UserViewSet):
     def delete_subscribe(self, request, *args, **kwargs):
         user = self.request.user
         author = get_object_or_404(User, id=self.kwargs.get('id'))
-        if Follow.objects.filter(user=user, following=author).exists():
-            Follow.objects.get(user=user, following=author).delete()
+
+        if follow := user.following.filter(following=author).first():
+            follow.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
-            {'errors': 'Вы не подписаны на этого пользователя'},
+            {'errors': 'Вы не подписаны на этого пользователя.'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -145,8 +146,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe_id = self.kwargs.get('pk')
         recipe = get_object_or_404(Recipe, id=recipe_id)
 
-        if model.objects.filter(user=user, recipe=recipe).exists():
-            model.objects.get(user=user, recipe=recipe).delete()
+        if obj := model.objects.filter(user=user, recipe=recipe).first():
+            obj.delete()
             return Response(
                 status=status.HTTP_204_NO_CONTENT
             )
