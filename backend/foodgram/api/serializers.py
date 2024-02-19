@@ -29,9 +29,10 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user
-        if current_user.is_anonymous:
-            return False
-        return Follow.objects.filter(user=current_user, following=obj).exists()
+        return (
+            current_user.is_authenticated
+            and Follow.objects.filter(user=current_user, following=obj).exists()
+        )
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -138,8 +139,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             )
         ]
 
-    def validate_ingredients(self, value):
-        ingredients = value
+    def validate_ingredients(self, ingredients):
         if not ingredients:
             raise serializers.ValidationError(
                 'Добавьте хотя бы один ингредиент.'
@@ -151,10 +151,9 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 'В списке присутствуют одинаковые ингредиенты.'
             )
 
-        return value
+        return ingredients
 
-    def validate_tags(self, value):
-        tags = value
+    def validate_tags(self, tags):
         if not tags:
             raise serializers.ValidationError('Добавьте хотя бы один тег.')
 
@@ -164,7 +163,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 'В списке присутствуют одинаковые теги.'
             )
 
-        return value
+        return tags
 
     @staticmethod
     def create_or_update(instance, ingredients, tags):
@@ -236,7 +235,7 @@ class FollowSerializer(serializers.ModelSerializer):
         user = self.context.get('request').user
         author = self.context.get('author')
 
-        if Follow.objects.filter(user=user, following=author).exists():
+        if user.following.filter(following=author).exists():
             raise serializers.ValidationError(
                 detail='Вы уже подписаны на этого автора.',
                 code=status.HTTP_400_BAD_REQUEST
