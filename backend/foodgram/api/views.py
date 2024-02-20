@@ -74,9 +74,9 @@ class CustomUserViewSet(UserViewSet):
             data=request.data,
             context={'request': request, 'author': author}
         )
-        if serializer.is_valid(raise_exception=True):
-            serializer.save(user=user, following=author)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=user, following=author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, *args, **kwargs):
@@ -137,9 +137,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             data=request.data,
             context={'user': user, 'recipe_id': recipe_id}
         )
-        if serializer.is_valid(raise_exception=True):
-            serializer.save(user=user, recipe=Recipe.objects.get(id=recipe_id))
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=user, recipe=Recipe.objects.get(id=recipe_id))
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete_favorite_shopping_cart(self, request, model, error):
         user = self.request.user
