@@ -31,7 +31,9 @@ class UserSerializer(serializers.ModelSerializer):
         current_user = self.context['request'].user
         return (
             current_user.is_authenticated
-            and Follow.objects.filter(user=current_user, following=obj).exists()
+            and Follow.objects.filter(
+                user=current_user, following=obj
+            ).exists()
         )
 
 
